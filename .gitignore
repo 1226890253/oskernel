@@ -1,2 +1,5 @@
-/cmake-build-debug
-/.idea
+cmake-build-debug
+.idea
+build
+bx_enh_dbg.ini
+hd.img
