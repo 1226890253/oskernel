@@ -1,6 +1,8 @@
 ; 0柱面0磁道2扇區
 [ORG  0x500]
 
+%include "/home/ljw/CLionProjects/test1/oskernel/boot/common.data"
+
 [SECTION .data]
 KERNEL_ADDR equ 0x1200
 
@@ -94,6 +96,31 @@ protected_mode:
     mov ecx, 3  ;从第3块盘起读60块盘
     mov bl, 60
     call read_hd
+
+    ;jmp CODE_SELECTOR:KERNEL_ADDR
+
+.load_x64_kernel:
+    xor esi,esi
+.loop_load_x64_kernel:
+    mov eax, 0x20000
+    mul esi
+    lea edi, [X64_KERNEL_ADDR_BASE + eax]   ; 读取硬盘的内容存储在内存的位置 edi = 0x100000 + 0x20000 * esi(0x20000 = 512 * 256
+
+    mov eax, 256
+    mul esi
+    lea ecx, [eax + X64_KERNEL_SECTOR_START]         ; 从哪个扇区开始读 ecx = 256 × esi + 41
+
+    mov bl, 0xff                ; 每次读多少扇区 0-255,共256个
+
+    push esi                    ; 保存esi
+
+    call read_hd                ; 读盘
+
+    pop esi                     ; 恢复esi
+
+    inc esi
+    cmp esi, X64_KERNEL_CONTAIN_SECTORS ; 如果x64内核过大，需要读很多扇区，改这里即可（实际覆盖的扇区 = （30 - 1） × 256 + 41 = 0x3a5200
+    jne .loop_load_x64_kernel
 
     jmp CODE_SELECTOR:KERNEL_ADDR
 

@@ -3,3 +3,4 @@ cmake-build-debug
 build
 bx_enh_dbg.ini
 hd.img
+.gdbinit

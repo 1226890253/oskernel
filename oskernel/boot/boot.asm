@@ -1,7 +1,6 @@
 [ORG 0x7c00]
 
-[SECTION .data]
-BOOT_MAIN_ADDR equ 0x500
+%include "/home/ljw/CLionProjects/test1/oskernel/boot/common.data"
 
 [SECTION .text]
 [BITS 16]
@@ -10,7 +9,7 @@ _start:
    mov ax, 3
    int 0x10
 
-   mov edi, BOOT_MAIN_ADDR
+   mov edi, SETUP_ADDR_BASE
    mov ecx, 1
    mov bl, 2
    call read_hd
@@ -18,7 +17,7 @@ _start:
    mov si, jmp_to_setup
    call print
 
-   jmp BOOT_MAIN_ADDR
+   jmp SETUP_ADDR_BASE
 
 read_hd:
     mov dx, 0x1f2

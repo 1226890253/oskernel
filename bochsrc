@@ -3,7 +3,7 @@ plugin_ctrl: unmapped=true, biosdev=true, speaker=true, extfpuirq=true, parallel
 config_interface: textconfig
 
 # display_library: x
-# gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
+gdbstub: enabled=1, port=1234, text_base=0, data_base=0, bss_base=0
 
 # 这两个一起开启
 magic_break: enabled=1
