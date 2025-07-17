@@ -16,7 +16,8 @@ CFLAGS64 += -fno-pic		# 不需要位置无关的代码  position independent cod
 CFLAGS64 += -fno-pie		# 不需要位置无关的可执行程序 position independent executable
 CFLAGS64 += -nostdlib		# 不需要标准库
 CFLAGS64 += -fno-stack-protector	# 不需要栈保护
-CFLAGS64+= -Ioskernel64/include
+CFLAGS64 += -Ioskernel64/include
+CFLAGS64:=$(strip ${CFLAGS64})
 
 SRCDIR:= oskernel
 SRC := $(shell find $(SRCDIR) -type f -name '*.c')
