@@ -18,6 +18,12 @@ add_executable(os
         oskernel64/kernel/vsprintf.c
         oskernel64/kernel/printk.c
         oskernel64/lib/string.c
+        oskernel64/mm/mm.c
+        oskernel64/mm/bitmap.c
+        oskernel64/lib/math.c
+        oskernel64/init/fppinit.c
+        oskernel64/kernel/idt.c
+        oskernel64/kernel/apic.c
 
 )
 

@@ -6,6 +6,14 @@
 [SECTION .data]
 KERNEL_ADDR equ 0x1200
 
+; 用于存储内存检测的数据
+ARDS_TIMES_BUFFER   equ 0x7000
+ARDS_BUFFER         equ 0x7002
+ARDS_TIMES          dw 0
+
+; 存储填充以后的offset，下次检测的结果接着写
+CHECK_BUFFER_OFFSET dw 0
+
 [SECTION .gdt]
 SEG_BASE equ 0
 SEG_LIMIT equ 0xfffff
@@ -47,6 +55,44 @@ setup_start:
     mov     gs, ax
     mov     si, ax
 
+; 内存检测
+memory_check:
+    xor ebx, ebx            ; ebx = 0
+    mov di, ARDS_BUFFER     ; es:di 指向一块内存   es因为前面已设置为0，这里不重复赋值
+
+.loop:
+    mov eax, 0xe820         ; ax = 0xe820
+    mov ecx, 20             ; ecx = 20
+    mov edx, 0x534D4150     ; edx = 0x534D4150
+    int 0x15
+
+    jc .memory_check_error   ; 如果出错
+
+    add di, cx              ; 下次填充的结果存到下个结构体
+
+    inc dword [ARDS_TIMES]  ; 检测次数 + 1
+
+    cmp ebx, 0              ; 在检测的时候，ebx会被bios修改，ebx不为0就要继续检测
+    jne .loop
+
+    mov ax, [ARDS_TIMES]            ; 保存内存检测次数
+    mov [ARDS_TIMES_BUFFER], ax
+
+    mov [CHECK_BUFFER_OFFSET], di   ; 保存offset
+
+.memory_check_success:
+    mov si, memory_check_success_msg
+    call print
+
+    jmp enter_protected_mode
+
+.memory_check_error:
+    mov     si, memory_check_error_msg
+    call    print
+
+    jmp $
+
+enter_protected_mode:
     mov     si, prepare_enter_protected_mode_msg
     call    print
     ;关中断并进入保护模式
@@ -57,6 +103,7 @@ setup_start:
     in al, 0x92
     or al, 0b0000_0010
     out 0x92, al
+
 
     ;开启保护模式
     mov eax, cr0
@@ -94,7 +141,7 @@ protected_mode:
     ;将内核读入内存
     mov edi, KERNEL_ADDR
     mov ecx, 3  ;从第3块盘起读60块盘
-    mov bl, 60
+    mov bl, 30
     call read_hd
 
     ;jmp CODE_SELECTOR:KERNEL_ADDR
@@ -192,8 +239,14 @@ read_hd_data:
 prepare_enter_protected_mode_msg:
     db "prepare to go into protected mode", 10, 13, 0
 
+memory_check_error_msg:
+    db "memory check fail...", 10, 13, 0
 
+memory_check_success_msg:
+    db "memory check success...", 10, 13, 0
 
+before_protected_jmp:
+    db "before_protected_jmp_aaaa", 10, 13, 0
 
 
 

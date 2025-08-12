@@ -1,20 +1,26 @@
 #include "gdt.h"
-
-#include <string.h>
-
+#include "string.h"
 #include "kernel.h"
 #include "types.h"
 
-#define GDT_SIZE 256
-u64 gdt[GDT_SIZE] = {0};
+#define PML4_ADDR 0x8000
+#define PDPT_ADDR 0x9000
+#define PD_ADDR 0xa000
+
+#define GDT_ADDR 0xb000
+
+// static u64 __attribute__((aligned(4096))) PML4[4];
+// static u64 __attribute__((aligned(4096))) PDPT[4];
+// static u64 __attribute__((aligned(4096))) PD[4];
+
+u64 (*pml4)[512]; //= (u64 (*)[512]) PML4_ADDR;
+u64 (*pdpt)[512]; //= (u64 (*)[512]) PDPT_ADDR;
+u64 (*pd)[512]; //= (u64 (*)[512]) PD_ADDR;
+
+u64 (*gdt)[256];// = GDT_ADDR;
 gdtr32 gdtr;
 
-
-static u64 __attribute__((aligned(4096))) PML4[512];
-static u64 __attribute__((aligned(4096))) PDPT[512];
-static u64 __attribute__((aligned(4096))) PD[512];
-
-static inline void write_cr3(u64 v) {
+static inline void write_cr3(u32 v) {
     asm __volatile("mov %0, %%cr3"
         ::"r"(v):"memory");
 }
@@ -26,7 +32,7 @@ static inline void read_cr3() {
     printk("cr3: 0x%x\n", cr3);
 }
 
-static inline set_cr4_pae() {
+static inline void set_cr4_pae() {
     asm __volatile("mov %%cr4, %%eax\n"
         "or  $(1<<5), %%eax\n"
         "mov %%eax, %%cr4\n"
@@ -61,12 +67,12 @@ static inline u64 read_lme() {
     asm __volatile(
         "mov #0xC0000080, %%ecx\n"
         "rdmsr": "=a"(lo), "=d"(hi)::);
-    u64 tmp = (u64)lo | (u64)hi << 32;
+    u64 tmp = (u64) lo | (u64) hi << 32;
     return tmp;
 }
 
 static void init_x64_code_desp(int gdt_index) {
-    gdt_desp *desp = &gdt[gdt_index];
+    gdt_desp *desp = &(*gdt)[gdt_index];
 
     desp->limit_low = 0;
     desp->base_low = 0;
@@ -83,7 +89,7 @@ static void init_x64_code_desp(int gdt_index) {
 }
 
 static void init_x64_date_desp(int gdt_index) {
-    gdt_desp *desp = &gdt[gdt_index];
+    gdt_desp *desp = &(*gdt)[gdt_index];
     desp->limit_low = 0;
     desp->base_low = 0;
     desp->type = 0b0010;
@@ -99,19 +105,21 @@ static void init_x64_date_desp(int gdt_index) {
 }
 
 static void init_x64_descriptor() {
+    gdt = (u64 (*)[256]) GDT_ADDR;
+
     asm __volatile("sgdt %[gdtr]"
         :[gdtr] "=m" (gdtr)
         :
         :"memory");
     printk("gdt: base 0x%x, limit: 0x%x\n", gdtr.address_start, gdtr.limit);
-    printk("long long is %d\n", sizeof(u64));
-    memcpy(&gdt, (void *)gdtr.address_start, gdtr.limit);
+    memset(gdt, 0, sizeof *gdt);
+    memcpy(gdt, (void *) gdtr.address_start, gdtr.limit + 1);
 
     init_x64_code_desp(3);
     init_x64_date_desp(4);
 
-    gdtr.address_start = (int) &gdt;
-    gdtr.limit = sizeof(gdt) - 1;
+    gdtr.address_start = gdt;
+    gdtr.limit = sizeof(*gdt) - 1;
 
     printk("new gdt: base 0x%x, limit: 0x%x\n", gdtr.address_start, gdtr.limit);
     asm __volatile("lgdt %[gdtr]"
@@ -121,19 +129,31 @@ static void init_x64_descriptor() {
 }
 
 static void build_paging() {
-    memset(PML4, 0, sizeof PML4);
-    memset(PDPT, 0, sizeof PDPT);
-    memset(PD, 0, sizeof PD);
+    pml4 = (u64 (*)[512]) PML4_ADDR;
+    pdpt = (u64 (*)[512]) PDPT_ADDR;
+    pd = (u64 (*)[512]) PD_ADDR;
 
-    PML4[0] = (u64) &PDPT | 0b11;
-    PDPT[0] = (u64) &PD | 0b11;
-    PD[0] = (0x0ull) | (1 << 7) | 0b11; //[0-2MIB)
-    PD[1] = (0x00200000ull) | (1 << 7) | 0b11; //[2Mib-4Mib)
+    memset(pml4, 0, sizeof *pml4);
+    memset(pdpt, 0, sizeof *pdpt);
+    memset(pd, 0, sizeof *pd);
+
+    (*pml4)[0] = (u64) &(*pdpt) | 0b11;
+    (*pdpt)[0] = (u64) &(*pd) | 0b11;
+    (*pd)[0] = (0x0ull) | (1 << 7) | 0b11; //[0-2MIB)
+    (*pd)[1] = (0x00200000ull) | (1 << 7) | 0b11; //[2Mib-4Mib)
+    (*pd)[2] = (0x00400000ull) | (1 << 7) | 0b11; //[4Mib-6Mib)
+    (*pd)[3] = (0x00600000ull) | (1 << 7) | 0b11; //[6Mib-8Mib)
+    (*pd)[4] = (0x00800000ull) | (1 << 7) | 0b11; //[8Mib-10Mib)
+
+    // PML4[0] = (u64) &PDPT | 0b11;
+    // PDPT[0] = (u64) &PD | 0b11;
+    // PD[0] = (0x0ull) | (1 << 7) | 0b11; //[0-2MIB)
+    // PD[1] = (0x00200000ull) | (1 << 7) | 0b11; //[2Mib-4Mib)
 }
 
 void entry64() {
     build_paging();
-    write_cr3((u64) &PML4);
+    write_cr3((u64) &(*pml4));
     set_cr4_pae();
     set_LME();
     set_cr0_pg(); //这里进入64位长模式

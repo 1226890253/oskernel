@@ -26,7 +26,7 @@ int __res; \
 __asm__("div %4":"=a" (n),"=d" (__res):"0" (n),"1" (0),"r" (base)); \
 __res; })
 
-static char * number(char * str, int num, int base, int size, int precision
+static char * number(char * str, u64 num, u64 base, int size, int precision
         ,int type)
 {
     char c,sign,tmp[36];
@@ -191,7 +191,7 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
             case 'x':
                 flags |= SMALL;
             case 'X':
-                str = number(str, va_arg(args, unsigned long), 16,
+                str = number(str, va_arg(args, unsigned long long), 16,
                              field_width, precision, flags);
                 break;
 

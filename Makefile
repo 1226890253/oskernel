@@ -93,12 +93,21 @@ bochs: all
 #qemu-system-i386
 qemug: all
 	qemu-system-x86_64 \
-	-m 32M \
-	-boot d \
+	-d int -D qemu-debug.log -no-reboot \
+	-enable-kvm -cpu host \
+	-m 9G \
+	-boot c \
 	-hda ./build/hd.img -s -S
 
 qemu: all
 	qemu-system-x86_64 \
-	-m 32M \
-	-boot c \
-	-hda ./build/hd.img
+		-d int -D qemu-debug.log -no-reboot\
+		-cpu Haswell -smp cores=4,threads=8 \
+		-m 9G \
+		-boot c \
+		-hda ./build/hd.img \
+
+
+#-hda ./build/hd.img \
+-enable-kvm -cpu host \
+-drive file=./build/hd.img,format=raw

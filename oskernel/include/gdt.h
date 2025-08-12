@@ -7,7 +7,7 @@
 
 #pragma pack(push,1)
 typedef struct gdtr32 {
-    unsigned short limit;
+    unsigned short limit; //历史遗留问题：0x0000表示1字节，0xFFFF表示65536字节，故需要-1
     unsigned int address_start;
 } gdtr32;
 #pragma pack(pop)
