@@ -166,12 +166,13 @@ void isr_dispatch_c(isr_frame* f) {
         case 0x08:
             printk("DF Double Fault!\n");
             die_halt("#DF",f);
-        case 0x13:
+        case 0x0D:
             printk("GP General Protected!");
             die_halt("#GP",f);
-        case 0x14:
+        case 0x0E:
             printk("PF Page fault");
-        die_halt("#PF",f);
+            decode_pf_err(f->error);
+            die_halt("#PF",f);
         default:
             if (vec >= 0x20) {//外部中断
                 apic_eoi();
@@ -181,9 +182,21 @@ void isr_dispatch_c(isr_frame* f) {
 }
 
 extern void isr_0x00();
+extern void isr_0x01();
+extern void isr_0x02();
+extern void isr_0x03();
+extern void isr_0x04();
+extern void isr_0x05();
+extern void isr_0x06();
+extern void isr_0x07();
 extern void isr_0x08();
-extern void isr_0x13();
-extern void isr_0x14();
+extern void isr_0x09();
+extern void isr_0x0A();
+extern void isr_0x0B();
+extern void isr_0x0C();
+extern void isr_0x0D();
+extern void isr_0x0E();
+extern void isr_0x0F();
 // ---------------------- 初始化入口 ----------------------
 void apic_singleCore_timer_init() {
     cli();
@@ -201,10 +214,10 @@ void apic_singleCore_timer_init() {
 
 
     //4.配置IDT： 向量0XF0（本地计时器），0xFE（错误中断）
-    set_idt_gate(0,isr_0x00,0,14,0,0x18); //DE
-    set_idt_gate(8,isr_0x08,0,14,0,0x18); //DF ist=2?
-    set_idt_gate(13,isr_0x13,0,14,0,0x18); //GP
-    set_idt_gate(14,isr_0x14,0,14,0,0x18); //PF ist=1?
+    set_idt_gate(0x00,isr_0x00,0,14,0,0x18); //DE
+    set_idt_gate(0x08,isr_0x08,0,14,0,0x18); //DF ist=2?
+    set_idt_gate(0x0D,isr_0x0D,0,14,0,0x18); //GP
+    set_idt_gate(0x0E,isr_0x0E,0,14,0,0x18); //PF ist=1?
 
     // set_idt_gate(0xF0,isr_apic_timer_stub,0,14,0,0x8);
     // set_idt_gate(0xFE,isr_apic_error_stub,0,14,0,0x8);
