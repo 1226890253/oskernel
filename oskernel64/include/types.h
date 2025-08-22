@@ -23,7 +23,4 @@ typedef unsigned short u16;
 typedef unsigned int u32;
 typedef unsigned long long u64;
 
-void cli() { asm volatile("cli"); }
-void sti() { asm volatile("sti"); }
-
 #endif //TYPES_H

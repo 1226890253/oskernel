@@ -10,7 +10,7 @@ bool check_APIC_Timer_status();
 bool check_APIC_TSC();
 
 void apic_eoi();
-void apic_singleCore_timer_init();
+void apic_init();
 void apic_timer_isr_c();
 void apic_error_isr_c();
 #endif //APIC_H

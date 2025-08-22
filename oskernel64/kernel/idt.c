@@ -19,6 +19,9 @@ void wrmsr(u32 msr, u64 value) {
     asm __volatile("wrmsr"::"c"(msr),"a"(lo),"d"(hi));
 }
 
+void cli() { asm volatile("cli"); }
+void sti() { asm volatile("sti"); }
+
 void set_idt_gate(u32 index, void (*handler)(void), u8 ist, u8 type, u8 dpl,u8 sel) {
     u64 addr = (u64) handler;
     idt[index].value1 = 0;
@@ -39,8 +42,6 @@ void set_idt_gate(u32 index, void (*handler)(void), u8 ist, u8 type, u8 dpl,u8 s
 void lidt() {
     asm __volatile("lidt %0"::"m"(idtr));
 }
-
-
 
 typedef struct __attribute__((packed)) {
     u64 r15, r14, r13, r12, r11, r10, r9, r8;
@@ -119,6 +120,9 @@ void isr_dispatch_c(isr_frame* f) {
             return;
         case 0xFE:
             apic_error_isr_c();
+            return;
+        case 0xFF:
+            apic_eoi();
             return;
         default:
             if (vec >= 0x20) {//外部中断

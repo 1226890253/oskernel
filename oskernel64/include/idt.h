@@ -39,4 +39,6 @@ void wrmsr(u32 msr, u64 value);
 void set_idt_gate(u32 index, void (*handler)(void), u8 ist, u8 type, u8 dpl,u8 sel);
 void lidt();
 void idt_init();
+void cli();
+void sti();
 #endif //IDT_H

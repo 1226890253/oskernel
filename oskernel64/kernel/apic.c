@@ -138,6 +138,7 @@ static inline void pic_disable_all() {
 // ---------------------- Timer ISR ----------------------
 extern void isr_0xF0();
 extern void isr_0xFE();
+extern void isr_0xFF();
 
 static volatile u64 g_ticks = 0;
 
@@ -149,6 +150,8 @@ void apic_eoi() {
 void apic_timer_isr_c() {
     g_ticks++;
     //中间的周期性工作
+    //printk("APIC timer tick!\n,%d",g_ticks);
+
     apic_eoi();
 }
 
@@ -156,7 +159,80 @@ void apic_error_isr_c() {
     apic_eoi();
 }
 
-void apic_singleCore_timer_init() {
+static bool check_apic() {
+    u32 a,b,c,d;
+    asm __volatile(
+        "cpuid\n"
+        :"=a"(a), "=b"(b), "=c"(c), "=d"(d)
+        :"a"(1),"c"(0));
+    bool is_apic= (d & (1u << 9)) != 0;
+    printk("APIC=%s\n",is_apic? "yes":"no");
+    return is_apic;
+}
+static bool check_apic2() {
+    u32 a,b,c,d;
+    asm __volatile(
+        "cpuid\n"
+        :"=a"(a), "=b"(b), "=c"(c), "=d"(d)
+        :"a"(1),"c"(0));
+    bool is_apic2 = (c & (1u << 21)) != 0;
+    printk("APIC2=%s\n",is_apic2? "yes":"no");
+    return is_apic2;
+}
+
+#define PIT_CH2     0x42
+#define PIT_CMD     0x43
+#define PIT_FREQUENCY 1193182
+
+void pit_delay(u32 ms) {
+    u32 ticks = PIT_FREQUENCY / 1000 * ms;
+
+    // 通道2, 方式0 (one-shot)
+    out_byte(PIT_CMD, 0xB2);
+
+    // 写 reload 值
+    out_byte(PIT_CH2, ticks & 0xFF);
+    out_byte(PIT_CH2, (ticks >> 8) & 0xFF);
+
+    // 轮询等待 (PIT 通道 2 输出 pin)
+    while (!(in_byte(0x61) & 0x20));
+}
+u32 calibrate_apic_timer() {
+    // 设定 divide=1
+    lapic_write(LAPIC_TIMER_DIV, 0xB);
+
+    // 装载一个很大的初值
+    lapic_write(LAPIC_TIMER_INITCNT, 0xFFFFFFFF);
+
+    // 启动 PIT 延时 10ms
+    pit_delay(10);
+
+    // 读剩余计数
+    u32 cur = lapic_read(LAPIC_TIMER_CURCNT);
+
+    u32 ticks = 0xFFFFFFFF - cur;
+    u32 apic_freq = ticks * (100); // 10ms → 放大100倍 = Hz
+    return apic_freq;
+}
+
+void apic_timer_init(u32 apic_freq, float hz) {
+    lapic_write(LAPIC_TIMER_DIV, 0xB); // divide=1
+
+    // 配置 LVT Timer = periodic 0x20作为时钟中断号,周期触发，不屏蔽中断
+    lapic_write(LAPIC_LVT_TIMER, 0xF0 | (1<<17) | (0<<16));
+    set_idt_gate(0xF0,isr_0xF0,0,14,0,0x18);
+
+    // 设置初始计数
+    u32 init_count = apic_freq / hz;
+    lapic_write(LAPIC_TIMER_INITCNT, init_count);
+}
+
+void apic_init() {
+
+    if (!check_apic()) {
+        return;
+    }
+    
     cli();
 
     //1.关8259a
@@ -171,15 +247,12 @@ void apic_singleCore_timer_init() {
     //3.这里需要映射虚拟地址
 
 
-    //4.配置IDT： 向量0xF0（本地计时器），0xFE（错误中断）
-    set_idt_gate(0xF0,isr_0xF0,0,14,0,0x08);
-    set_idt_gate(0xFE,isr_0xFE,0,14,0,0x08);
-    idtr.base = (u64)idt;
-    idtr.limit = (sizeof idt) -1;
-    lidt();
+    //4.配置IDT： 向量0xF0（本地计时器），0xFE（错误中断）,0xFF(虚拟中断)
+    set_idt_gate(0xFE,isr_0xFE,0,14,0,0x18);
+    set_idt_gate(0xFF,isr_0xFF,0,14,0,0x18);
 
-    //5.使能APIC （SVR bit 8）
-    lapic_write(LAPIC_SVR, 0x100 | 0xFF);
+    //5.使能APIC （SVR bit 8） 中断向量号为 0xFF
+    lapic_write(LAPIC_SVR, 0x100 | 0xFF); 
 
     //6. 接收所有优先级中断
     lapic_write(LAPIC_TPR,0x00);
@@ -189,11 +262,15 @@ void apic_singleCore_timer_init() {
     lapic_write(LAPIC_LVT_LINT1, 1u << 16);
     lapic_write(LAPIC_LVT_ERROR, 0xFE);
 
-    //8.配置本地APIC定时器,div by 16，周期模式
-    lapic_write(LAPIC_TIMER_DIV, 0b0011);
-    lapic_write(LAPIC_LVT_TIMER, (1u << 17) | 0xF0);
-    lapic_write(LAPIC_TIMER_INITCNT, 0x10000);
+    //8.配置本地APIC定时器,div by 1，周期模式
+    if (!check_APIC_Timer_status()) {
+        return;
+    }
+
+    u32 freq = calibrate_apic_timer();
+    printk("APIC Timer Frequency: %d Hz\n", freq);
+
+    apic_timer_init(freq,0.1);
 
     sti();
-
 }
