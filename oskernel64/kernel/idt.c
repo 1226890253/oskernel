@@ -5,6 +5,8 @@
 #include <kernel.h>
 #include <types.h>
 
+extern void keymap_handler(int idt_index);
+
 idt_entry idt[256]={0};
 Idtr idtr;
 
@@ -124,6 +126,9 @@ void isr_dispatch_c(isr_frame* f) {
         case 0xFF:
             apic_eoi();
             return;
+        case 0x21:
+            keymap_handler(vec);
+            return;
         default:
             if (vec >= 0x20) {//外部中断
                 apic_eoi();
@@ -148,6 +153,7 @@ extern void isr_0x0C();
 extern void isr_0x0D();
 extern void isr_0x0E();
 extern void isr_0x0F();
+extern void isr_0x21();
 
 
 void idt_init() {
@@ -155,6 +161,7 @@ void idt_init() {
     set_idt_gate(0x08,isr_0x08,0,14,0,0x18); //DF ist=2?
     set_idt_gate(0x0D,isr_0x0D,0,14,0,0x18); //GP
     set_idt_gate(0x0E,isr_0x0E,0,14,0,0x18); //PF ist=1?
+    set_idt_gate(0x21,isr_0x21,0,14,0,0x18); //键盘中断
 
     idtr.base = (u64)idt;
     idtr.limit = (sizeof idt) -1;
