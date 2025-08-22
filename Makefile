@@ -6,6 +6,7 @@ CFLAGS+= -fno-pie		# 不需要位置无关的可执行程序 position independen
 CFLAGS+= -nostdlib		# 不需要标准库
 CFLAGS+= -fno-stack-protector	# 不需要栈保护
 CFLAGS+= -Ioskernel/include
+CFLAGS += -mno-red-zone
 CFLAGS:=$(strip ${CFLAGS})
 
 CFLAGS64 := -m64
@@ -17,6 +18,7 @@ CFLAGS64 += -fno-pie		# 不需要位置无关的可执行程序 position indepen
 CFLAGS64 += -nostdlib		# 不需要标准库
 CFLAGS64 += -fno-stack-protector	# 不需要栈保护
 CFLAGS64 += -Ioskernel64/include
+CFLAGS64 += -mno-red-zone
 CFLAGS64:=$(strip ${CFLAGS64})
 
 SRCDIR:= oskernel

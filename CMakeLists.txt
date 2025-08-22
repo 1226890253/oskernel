@@ -25,6 +25,7 @@ add_executable(os
         oskernel64/kernel/idt.c
         oskernel64/kernel/apic.c
         oskernel64/kernel/tss.c
+        oskernel64/kernel/chr_drv/keyboard.c
 
 )
 

@@ -138,7 +138,7 @@ void mov_gdt() {
         :"memory");
     printk("success set gdtrAddr= 0x%X,limit=0x%X\n", gdtr.address_start, gdtr.limit);
 
-    tss_init_and_load(gdtr.address_start,5);
+    //tss_init_and_load(gdtr.address_start,5);
 }
 
 // void mm_apply(u32 mm_size, ) {

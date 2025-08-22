@@ -6,6 +6,8 @@
  * 断码 = 通码 | 8
  */
 
+#include <apic.h>
+
 #include "types.h"
 #include "idt.h"
 #include "io.h"

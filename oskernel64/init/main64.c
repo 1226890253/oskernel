@@ -1,5 +1,6 @@
 #include <apic.h>
 #include <idt.h>
+#include <tss.h>
 
 #include "mm.h"
 #include "tty.h"
@@ -33,10 +34,7 @@ void main64() {
     check_APIC_Timer_status();
     check_APIC_TSC();
 
-    apic_singleCore_timer_init();
-    u32 t=*(volatile u32*)(0xFEE00000ull + 0x20);
-    printk("success read t=%d",t);
-    //int a=10/0;
+    idt_init();
 
     while (true) {
         asm __volatile("hlt\n");

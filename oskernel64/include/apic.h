@@ -8,4 +8,7 @@
 void print_CPUID();
 bool check_APIC_Timer_status();
 bool check_APIC_TSC();
+
+void apic_eoi();
+void apic_singleCore_timer_init();
 #endif //APIC_H

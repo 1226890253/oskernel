@@ -34,8 +34,9 @@ typedef struct __attribute__((packed))  {
     u64 base;  //表基址
 }Idtr;
 
-void send_eoi_old(int idt_index);
-void apic_eoi();
-void apic_singleCore_timer_init();
-
+u64 rdmsr(u32 msr);
+void wrmsr(u32 msr, u64 value);
+void set_idt_gate(u32 index, void (*handler)(void), u8 ist, u8 type, u8 dpl,u8 sel);
+void lidt();
+void idt_init();
 #endif //IDT_H
