@@ -171,6 +171,9 @@ void isr_dispatch_c(isr_frame* f) {
             die_halt("#GP",f);
         case 0x0E:
             printk("PF Page fault");
+            unsigned long cr2;
+            asm volatile("mov %%cr2, %0" : "=r"(cr2));
+            printk("CR2=%x\n", (unsigned long long)cr2);
             decode_pf_err(f->error);
             die_halt("#PF",f);
         default:
