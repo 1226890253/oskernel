@@ -51,6 +51,7 @@ make_isr_stub      0x18   ;/* (Reserved) 保留，无 error-code */
 make_isr_stub      0x19   ;/* (Reserved) 保留，无 error-code */
 make_isr_stub      0x1A   ;/* (Reserved) 保留，无 error-code */
 make_isr_stub      0x1B   ;/* (Reserved) 保留，无 error-code */
+make_isr_stub      0x21   ;/* Keyboard interrupt */
 make_isr_stub      0xF0   ;/* Local APIC timer */
 make_isr_stub      0xFE   ;/* Local APIC error */
 make_isr_stub      0xFF   ;/* Local APIC spurious interrupt */
