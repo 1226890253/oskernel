@@ -57,7 +57,7 @@ void print_CPUID() {
     printk("Brand: %s\n", brand);
 
 }
-void print_APIC_Timer_status() {
+bool check_APIC_Timer_status() {
     u32 a,b,c,d;
 
     // 1) 查询最大基本 CPUID 叶
@@ -66,7 +66,7 @@ void print_APIC_Timer_status() {
 
     if (max_basic < 0x6) {
         printk("CPUID.06H Not supported: ARAT cannot be determined (APIC timers may be affected by P/C status)\n");
-        return;
+        return false;
     }
 
     // 2) 读取 CPUID.06H:EAX，检查 ARAT（bit 2）
@@ -75,8 +75,10 @@ void print_APIC_Timer_status() {
 
     if (arat) {
         printk("ARAT=1: APIC timers have a constant rate (not affected by P-state/C-state).\n");
+        return true;
     } else {
         printk("ARAT=0: The APIC timer may temporarily stop or drift during deep C state or frequency scaling.\n");
+        return true;
     }
 }
 
@@ -84,9 +86,9 @@ bool check_APIC_TSC() {
     u32 a,b,c,d;
     cpuid(0x1, 0x0, &a, &b, &c, &d);
     if (c & (1u << 24)) {
-        printk("APIC support TSC-Deadline model");
+        printk("APIC support TSC-Deadline model\n");
         return true;
     }
-    printk("APIC does not support TSC-Deadline model");
+    printk("APIC does not support TSC-Deadline model\n");
     return false;
 }

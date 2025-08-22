@@ -35,5 +35,7 @@ typedef struct __attribute__((packed))  {
 }Idtr;
 
 void send_eoi_old(int idt_index);
+void apic_eoi();
+void apic_singleCore_timer_init();
 
 #endif //IDT_H

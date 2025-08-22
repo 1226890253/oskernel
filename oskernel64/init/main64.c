@@ -1,4 +1,5 @@
 #include <apic.h>
+#include <idt.h>
 
 #include "mm.h"
 #include "tty.h"
@@ -29,8 +30,14 @@ void main64() {
     kernelPage_init();
     check_apic();
     print_CPUID();
-    print_APIC_Timer_status();
+    check_APIC_Timer_status();
     check_APIC_TSC();
+
+    apic_singleCore_timer_init();
+    u32 t=*(volatile u32*)(0xFEE00000ull + 0x20);
+    printk("success read t=%d",t);
+    //int a=10/0;
+
     while (true) {
         asm __volatile("hlt\n");
     }

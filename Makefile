@@ -46,12 +46,16 @@ ${BUILD}/oskernel64/kernel64.bin : ${BUILD}/oskernel64/kernel64.elf
 	objcopy -O binary ${BUILD}/oskernel64/kernel64.elf ${BUILD}/oskernel64/kernel64.bin
 	nm ${BUILD}/oskernel64/kernel64.elf | sort > ${BUILD}/oskernel64/system64.map
 
-${BUILD}/oskernel64/kernel64.elf : ${BUILD}/oskernel64/boot/head.o ${OBJS64}
+${BUILD}/oskernel64/kernel64.elf : ${BUILD}/oskernel64/boot/head.o ${OBJS64} ${BUILD}/oskernel64/kernel/isr.o
 	ld -b elf64-x86-64 $^ -o $@ -Ttext 0x100000
 
 ${OBJS64}: ${BUILD}/%.o : %.c
 	@mkdir -p $(@D)
 	gcc ${CFLAGS64} -g -c $^ -o $@
+
+${BUILD}/oskernel64/kernel/isr.o: oskernel64/kernel/isr.asm
+	@mkdir -p $(@D)
+	nasm -f elf64 -g $< -o $@
 
 ${BUILD}/oskernel64/boot/head.o: oskernel64/boot/head.asm
 	@mkdir -p $(@D)
@@ -94,7 +98,7 @@ bochs: all
 qemug: all
 	qemu-system-x86_64 \
 	-d int -D qemu-debug.log -no-reboot \
-	-enable-kvm -cpu host \
+	-cpu Haswell -smp cores=4,threads=8 \
 	-m 9G \
 	-boot c \
 	-hda ./build/hd.img -s -S

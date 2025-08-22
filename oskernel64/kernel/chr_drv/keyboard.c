@@ -235,7 +235,7 @@ void keymap_handler(int idt_index) {
     uchar ext = 2; // keymap 状态索引，默认没有 shift 键
 
     // 告诉中断控制芯片中断已处理（好像不做这个事也没啥问题）
-    send_eoi(idt_index);
+    apic_eoi();
 
     uchar scancode = in_byte(0x60);
 
