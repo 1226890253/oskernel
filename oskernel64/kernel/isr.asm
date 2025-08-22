@@ -51,6 +51,8 @@ make_isr_stub      0x18   ;/* (Reserved) 保留，无 error-code */
 make_isr_stub      0x19   ;/* (Reserved) 保留，无 error-code */
 make_isr_stub      0x1A   ;/* (Reserved) 保留，无 error-code */
 make_isr_stub      0x1B   ;/* (Reserved) 保留，无 error-code */
+make_isr_stub      0xF0   ;/* Local APIC timer */
+make_isr_stub      0xFE   ;/* Local APIC error */
 
 %macro PUSH_GPRS 0
     push rax
@@ -116,7 +118,7 @@ isr_common_entry:
     jz .Lno_swap_exit
     swapgs
 .Lno_swap_exit:
-    POP_GORS
+    POP_GPRS
     add rsp,16
     iretq
 
@@ -148,7 +150,7 @@ isr_common_entry_err:
     jz .Lno_swap_exit_e
     swapgs
 .Lno_swap_exit_e:
-    POP_GRPS
+    POP_GPRS
     add rsp,16
     iretq
 

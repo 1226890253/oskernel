@@ -136,11 +136,8 @@ static inline void pic_disable_all() {
 }
 
 // ---------------------- Timer ISR ----------------------
-// extern void isr_apic_timer_stub();
-// extern void isr_apic_error_stub();
-
-void isr_apic_timer_stub() {}
-void isr_apic_error_stub() {}
+extern void isr_0xF0();
+extern void isr_0xFE();
 
 static volatile u64 g_ticks = 0;
 
@@ -174,9 +171,9 @@ void apic_singleCore_timer_init() {
     //3.这里需要映射虚拟地址
 
 
-    //4.配置IDT： 向量0XF0（本地计时器），0xFE（错误中断）
-    // set_idt_gate(0xF0,isr_apic_timer_stub,0,14,0,0x8);
-    // set_idt_gate(0xFE,isr_apic_error_stub,0,14,0,0x8);
+    //4.配置IDT： 向量0xF0（本地计时器），0xFE（错误中断）
+    set_idt_gate(0xF0,isr_0xF0,0,14,0,0x08);
+    set_idt_gate(0xFE,isr_0xFE,0,14,0,0x08);
     idtr.base = (u64)idt;
     idtr.limit = (sizeof idt) -1;
     lidt();
@@ -192,10 +189,10 @@ void apic_singleCore_timer_init() {
     lapic_write(LAPIC_LVT_LINT1, 1u << 16);
     lapic_write(LAPIC_LVT_ERROR, 0xFE);
 
-    // //8.配置本地APIC定时器,div by 16
-    // lapic_write(LAPIC_TIMER_DIV, 0b0011);
-
-
+    //8.配置本地APIC定时器,div by 16，周期模式
+    lapic_write(LAPIC_TIMER_DIV, 0b0011);
+    lapic_write(LAPIC_LVT_TIMER, (1u << 17) | 0xF0);
+    lapic_write(LAPIC_TIMER_INITCNT, 0x10000);
 
     sti();
 

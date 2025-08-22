@@ -114,6 +114,12 @@ void isr_dispatch_c(isr_frame* f) {
             asm volatile("mov %%cr2, %0" : "=r"(cr2));
             printk("  CR2=%x\n", (unsigned long long)cr2);
             die_halt("#PF",f);
+        case 0xF0:
+            apic_timer_isr_c();
+            return;
+        case 0xFE:
+            apic_error_isr_c();
+            return;
         default:
             if (vec >= 0x20) {//外部中断
                 apic_eoi();
